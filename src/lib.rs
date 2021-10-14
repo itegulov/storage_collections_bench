@@ -1,11 +1,26 @@
+#![feature(asm)]
+#![feature(bench_black_box)]
+
 use arbitrary::Arbitrary;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
 use near_sdk::store::LookupMap;
+use std::hint::black_box;
 
-#[derive(BorshDeserialize, BorshSerialize, Ord, PartialOrd, Eq, PartialEq, Arbitrary, Clone)]
+#[derive(
+    BorshDeserialize,
+    BorshSerialize,
+    Ord,
+    PartialOrd,
+    Eq,
+    PartialEq,
+    Arbitrary,
+    Clone,
+    Debug,
+    Default,
+)]
 pub struct StackHeapMock {
-    a: Option<u128>,
+    a: u128,
     b: Option<[u8; 32]>,
     c: Vec<u8>,
 }
@@ -43,19 +58,26 @@ impl LookupBench {
         for op in actions {
             match op {
                 Action::Insert(k, v) => {
-                    let _r1 = lm.insert(k, v);
+                    let _r = black_box(lm.insert(k, v));
                 }
                 Action::Set(k, v) => {
                     lm.set(k, v);
                 }
                 Action::Remove(k) => {
-                    let _r1 = lm.remove(&k);
+                    let _r = black_box(lm.remove(&k));
                 }
                 Action::Flush => {
                     lm.flush();
                 }
                 Action::Get(k) => {
-                    let _r1 = lm.get(&k);
+                    let _r = black_box(lm.get(&k));
+
+                    // Just trying to avoid compiler from optimizing away
+                    if let Some(v) = _r {
+                        if *v == ValueType::default() {
+                            near_sdk::log!("default");
+                        }
+                    }
                 }
             }
         }
@@ -101,17 +123,43 @@ mod tests {
                 .await
                 .unwrap();
 
-                let gas_burnt = outcome.transaction_outcome.outcome.gas_burnt as u128;
+                let gas_burnt = outcome.transaction_outcome.outcome.gas_burnt as u128
+                    + outcome
+                        .receipts_outcome
+                        .iter()
+                        .map(|o| o.outcome.gas_burnt as u128)
+                        .sum::<u128>();
                 total_gas += gas_burnt;
-                println!("{:?} {}", outcome.status, gas_burnt);
+                println!("outcome: {:?} {}", outcome.status, gas_burnt);
+                // println!("logs: {:?}", outcome.receipts_outcome.iter().map(|o| &o.outcome.logs));
             }
         }
 
         total_gas
     }
-    
+
     #[runner::test]
     async fn hashing_fuzz() {
-        assert_eq!(fuzz_contract("./collections_bench-HASHING.wasm").await, 58524904330838);
+        assert_eq!(
+            fuzz_contract("./collections_bench-HASH.wasm").await,
+            635139298987587
+        );
+    }
+
+    #[runner::test]
+    async fn serialize_fuzz() {
+        assert_eq!(
+            fuzz_contract("./collections_bench-SERIALIZE.wasm").await,
+            654587767237470 
+        );
+    }
+
+    #[runner::test]
+    #[ignore]
+    async fn curr_fuzz() {
+        assert_eq!(
+            fuzz_contract("./target/wasm32-unknown-unknown/release/collections_bench.wasm").await,
+            635139298987587
+        );
     }
 }
