@@ -1,0 +1,27 @@
+[package]
+name = "collections_bench"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+codegen-units = 1
+# Tell `rustc` to optimize for small code size.
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+
+[dependencies]
+# near-sdk = "4.0.0-pre.3"
+near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "03487c184d37b0382dd9bd41c57466acad58fc1f", features = ["unstable"] } 
+arbitrary = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+# This commit may be broken in the future if squashed
+# runner = { git = "https://github.com/near/runner-rs", rev = "ef3b45409240bedf74cdb83565e276280e3a7cce" }
+runner = { path = "../../near/runner-rs/runner" }
+rand_xorshift = "0.3"
+rand = "0.8.3"
