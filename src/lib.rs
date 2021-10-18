@@ -151,7 +151,7 @@ mod tests {
     async fn old_fuzz() {
         assert_eq!(
             fuzz_contract("./old_structure.wasm").await,
-            1014240817974339
+            1023236609572743
         );
     }
 

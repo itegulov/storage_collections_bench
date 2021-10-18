@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-near-sdk = "3.1"
+near-sdk = "4.0.0-pre.4"
 
 [lib]
 crate-type = ["cdylib"]
