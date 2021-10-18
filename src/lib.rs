@@ -71,13 +71,6 @@ impl LookupBench {
                 }
                 Action::Get(k) => {
                     let _r = black_box(lm.get(&k));
-
-                    // Just trying to avoid compiler from optimizing away
-                    if let Some(v) = _r {
-                        if *v == ValueType::default() {
-                            near_sdk::log!("default");
-                        }
-                    }
                 }
             }
         }
@@ -150,7 +143,15 @@ mod tests {
     async fn serialize_fuzz() {
         assert_eq!(
             fuzz_contract("./collections_bench-SERIALIZE.wasm").await,
-            654587767237470 
+            654582322008654
+        );
+    }
+
+    #[runner::test]
+    async fn old_fuzz() {
+        assert_eq!(
+            fuzz_contract("./old_structure.wasm").await,
+            1014240817974339
         );
     }
 
@@ -159,7 +160,7 @@ mod tests {
     async fn curr_fuzz() {
         assert_eq!(
             fuzz_contract("./target/wasm32-unknown-unknown/release/collections_bench.wasm").await,
-            635139298987587
+            635133853758771
         );
     }
 }

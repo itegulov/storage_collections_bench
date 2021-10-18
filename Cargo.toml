@@ -16,8 +16,8 @@ panic = "abort"
 
 [dependencies]
 # near-sdk = "4.0.0-pre.3"
-near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "03487c184d37b0382dd9bd41c57466acad58fc1f", features = ["unstable"] } 
-# near-sdk = { path = "../../near/near-sdk-rs/near-sdk", features = ["unstable"] } 
+# near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "03487c184d37b0382dd9bd41c57466acad58fc1f", features = ["unstable"] } 
+near-sdk = { path = "../../near/near-sdk-rs/near-sdk", features = ["unstable"] } 
 arbitrary = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
