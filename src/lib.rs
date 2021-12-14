@@ -4,7 +4,7 @@
 use arbitrary::Arbitrary;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
-use near_sdk::store::LookupMap;
+use near_sdk::store::{LookupMap, LookupSet};
 use std::hint::black_box;
 
 #[derive(
@@ -77,6 +77,55 @@ impl LookupMapBench {
     }
 }
 
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct LookupSetBench {
+    set: LookupSet<KeyType>,
+}
+
+impl Default for LookupSetBench {
+    fn default() -> Self {
+        Self {
+            set: LookupSet::new(b"m"),
+        }
+    }
+}
+
+#[derive(Arbitrary, Debug, BorshDeserialize, BorshSerialize)]
+pub enum SetAction<T> {
+    Insert(T),
+    Put(T),
+    Remove(T),
+    Flush,
+    Contains(T),
+}
+
+#[near_bindgen]
+impl LookupSetBench {
+    pub fn fuzz_set(&mut self, #[serializer(borsh)] actions: Vec<SetAction<KeyType>>) {
+        let ls = &mut self.set;
+        for op in actions {
+            match op {
+                SetAction::Insert(v) => {
+                    let _r = black_box(ls.insert(v));
+                }
+                SetAction::Put(v) => {
+                    black_box(ls.put(v));
+                }
+                SetAction::Remove(v) => {
+                    let _r = black_box(ls.remove(&v));
+                }
+                SetAction::Flush => {
+                    black_box(ls.flush())
+                }
+                SetAction::Contains(v) => {
+                    let _r = black_box(ls.contains(&v));
+                }
+            }
+        }
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 mod tests {
@@ -116,7 +165,39 @@ mod tests {
                 let gas_burnt = outcome.total_gas_burnt;
                 total_gas += Gas(gas_burnt);
                 println!("outcome: {:?} {}", outcome.status, gas_burnt);
-                // println!("logs: {:?}", outcome.receipts_outcome.iter().map(|o| &o.outcome.logs));
+            }
+        }
+
+        total_gas.0
+    }
+
+    async fn fuzz_set_contract(wasm_file: &str) -> u64 {
+        let worker = workspaces::sandbox();
+        let contract = worker.dev_deploy(std::fs::read(wasm_file).unwrap()).await.unwrap();
+
+        let mut total_gas: Gas = Gas(0);
+
+        let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
+        let mut buf = vec![0; BUFFER_SIZE];
+        for _ in 0..24 {
+            rng.fill_bytes(&mut buf);
+
+            // Randomize the amount of elements generated with unstructured.
+            // Uses a slice of a random length from 0 to randomness buffer size
+            let u = Unstructured::new(&buf[0..(rng.gen::<usize>() % BUFFER_SIZE)]);
+            if let Ok(ops) = Vec::<SetAction<KeyType>>::arbitrary_take_rest(u) {
+                // Call method with data
+                let outcome = contract
+                    .call(&worker, "fuzz_set".to_string())
+                    .with_args(ops.try_to_vec().unwrap())
+                    .with_gas(10_000_000_000_000_0) // Default * 10
+                    .transact()
+                    .await
+                    .unwrap();
+
+                let gas_burnt = outcome.total_gas_burnt;
+                total_gas += Gas(gas_burnt);
+                println!("outcome: {:?} {}", outcome.status, gas_burnt);
             }
         }
 
@@ -135,7 +216,7 @@ mod tests {
     async fn serialize_fuzz() {
         assert_eq!(
             fuzz_contract("./collections_bench-SERIALIZE.wasm").await,
-            502773485446719
+            502822617744153
         );
     }
 
@@ -143,7 +224,23 @@ mod tests {
     async fn old_fuzz() {
         assert_eq!(
             fuzz_contract("./old_structure.wasm").await,
-            912612606379644
+            912643592244114
+        );
+    }
+
+    #[tokio::test]
+    async fn serialize_fuzz_set() {
+        assert_eq!(
+            fuzz_set_contract("./collections_bench-SERIALIZE.wasm").await,
+            502192654310629
+        );
+    }
+
+    #[tokio::test]
+    async fn old_fuzz_set() {
+        assert_eq!(
+            fuzz_set_contract("./old_structure.wasm").await,
+            808241101138249
         );
     }
 

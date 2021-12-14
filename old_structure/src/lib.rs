@@ -2,7 +2,7 @@
 #![feature(bench_black_box)]
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
+use near_sdk::collections::{LookupMap, LookupSet};
 use near_sdk::near_bindgen;
 use std::hint::black_box;
 
@@ -65,6 +65,54 @@ impl LookupMapBench {
                 }
                 MapAction::Get(k) => {
                     let _r = black_box(lm.get(&k));
+                }
+            }
+        }
+    }
+}
+
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct LookupSetBench {
+    set: LookupSet<KeyType>,
+}
+
+impl Default for LookupSetBench {
+    fn default() -> Self {
+        Self {
+            set: LookupSet::new(b"m"),
+        }
+    }
+}
+
+#[derive(Debug, BorshDeserialize, BorshSerialize)]
+pub enum SetAction<T> {
+    Insert(T),
+    Put(T),
+    Remove(T),
+    Flush,
+    Contains(T),
+}
+
+#[near_bindgen]
+impl LookupSetBench {
+    pub fn fuzz_set(&mut self, #[serializer(borsh)] actions: Vec<SetAction<KeyType>>) {
+        let ls = &mut self.set;
+        for op in actions {
+            match op {
+                SetAction::Insert(v) => {
+                    let _r = black_box(ls.insert(&v));
+                }
+                SetAction::Put(v) => {
+                    black_box(ls.insert(&v));
+                }
+                SetAction::Remove(v) => {
+                    let _r = black_box(ls.remove(&v));
+                }
+                SetAction::Flush => {
+                }
+                SetAction::Contains(v) => {
+                    let _r = black_box(ls.contains(&v));
                 }
             }
         }
