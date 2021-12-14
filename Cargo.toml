@@ -16,13 +16,14 @@ panic = "abort"
 
 [dependencies]
 # near-sdk = "4.0.0-pre.3"
-# near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "03487c184d37b0382dd9bd41c57466acad58fc1f", features = ["unstable"] } 
-near-sdk = { path = "../../near/near-sdk-rs/near-sdk", features = ["unstable"] } 
+near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "daniyar/efficient-lookup-set", features = ["unstable"] }
+#near-sdk = { path = "../../near/near-sdk-rs/near-sdk", features = ["unstable"] }
 arbitrary = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 # This commit may be broken in the future if squashed
-# runner = { git = "https://github.com/near/runner-rs", rev = "ef3b45409240bedf74cdb83565e276280e3a7cce" }
-runner = { path = "../../near/runner-rs/runner" }
+workspaces = { git = "https://github.com/near/workspaces-rs", branch = "feat/call-builder" }
+#workspaces = { path = "../../near/workspaces-rs/workspaces" }
 rand_xorshift = "0.3"
 rand = "0.8.3"
+tokio = { version = "1.14.0", features = ["full"] }

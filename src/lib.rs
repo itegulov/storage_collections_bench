@@ -30,11 +30,11 @@ type ValueType = StackHeapMock;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct LookupBench {
+pub struct LookupMapBench {
     map: LookupMap<KeyType, ValueType>,
 }
 
-impl Default for LookupBench {
+impl Default for LookupMapBench {
     fn default() -> Self {
         Self {
             map: LookupMap::new(b"m"),
@@ -43,7 +43,7 @@ impl Default for LookupBench {
 }
 
 #[derive(Arbitrary, Debug, BorshDeserialize, BorshSerialize)]
-pub enum Action<K, V> {
+pub enum MapAction<K, V> {
     Insert(K, V),
     Set(K, Option<V>),
     Remove(K),
@@ -52,24 +52,24 @@ pub enum Action<K, V> {
 }
 
 #[near_bindgen]
-impl LookupBench {
-    pub fn fuzz(&mut self, #[serializer(borsh)] actions: Vec<Action<KeyType, ValueType>>) {
+impl LookupMapBench {
+    pub fn fuzz(&mut self, #[serializer(borsh)] actions: Vec<MapAction<KeyType, ValueType>>) {
         let lm = &mut self.map;
         for op in actions {
             match op {
-                Action::Insert(k, v) => {
+                MapAction::Insert(k, v) => {
                     let _r = black_box(lm.insert(k, v));
                 }
-                Action::Set(k, v) => {
+                MapAction::Set(k, v) => {
                     lm.set(k, v);
                 }
-                Action::Remove(k) => {
+                MapAction::Remove(k) => {
                     let _r = black_box(lm.remove(&k));
                 }
-                Action::Flush => {
+                MapAction::Flush => {
                     lm.flush();
                 }
-                Action::Get(k) => {
+                MapAction::Get(k) => {
                     let _r = black_box(lm.get(&k));
                 }
             }
@@ -82,16 +82,18 @@ impl LookupBench {
 mod tests {
     use super::*;
     use arbitrary::{Arbitrary, Unstructured};
+    use near_sdk::Gas;
     use rand::SeedableRng;
     use rand::{Rng, RngCore};
-    use runner;
+    use workspaces::prelude::*;
 
     const BUFFER_SIZE: usize = 4096;
 
-    async fn fuzz_contract(wasm_file: &str) -> u128 {
-        let (contract_id, signer) = runner::dev_deploy(wasm_file).await.unwrap();
+    async fn fuzz_contract(wasm_file: &str) -> u64 {
+        let worker = workspaces::sandbox();
+        let contract = worker.dev_deploy(std::fs::read(wasm_file).unwrap()).await.unwrap();
 
-        let mut total_gas: u128 = 0;
+        let mut total_gas: Gas = Gas(0);
 
         let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
         let mut buf = vec![0; BUFFER_SIZE];
@@ -101,61 +103,51 @@ mod tests {
             // Randomize the amount of elements generated with unstructured.
             // Uses a slice of a random length from 0 to randomness buffer size
             let u = Unstructured::new(&buf[0..(rng.gen::<usize>() % BUFFER_SIZE)]);
-            if let Ok(ops) = Vec::<Action<KeyType, ValueType>>::arbitrary_take_rest(u) {
+            if let Ok(ops) = Vec::<MapAction<KeyType, ValueType>>::arbitrary_take_rest(u) {
                 // Call method with data
-                let outcome = runner::call(
-                    &signer,
-                    contract_id.clone(),
-                    contract_id.clone(),
-                    "fuzz".to_string(),
-                    ops.try_to_vec().unwrap(),
-                    None,
-                    // Default * 10
-                    Some(10_000_000_000_000_0),
-                )
-                .await
-                .unwrap();
+                let outcome = contract
+                    .call(&worker, "fuzz".to_string())
+                    .with_args(ops.try_to_vec().unwrap())
+                    .with_gas(10_000_000_000_000_0) // Default * 10
+                    .transact()
+                    .await
+                    .unwrap();
 
-                let gas_burnt = outcome.transaction_outcome.outcome.gas_burnt as u128
-                    + outcome
-                        .receipts_outcome
-                        .iter()
-                        .map(|o| o.outcome.gas_burnt as u128)
-                        .sum::<u128>();
-                total_gas += gas_burnt;
+                let gas_burnt = outcome.total_gas_burnt;
+                total_gas += Gas(gas_burnt);
                 println!("outcome: {:?} {}", outcome.status, gas_burnt);
                 // println!("logs: {:?}", outcome.receipts_outcome.iter().map(|o| &o.outcome.logs));
             }
         }
 
-        total_gas
+        total_gas.0
     }
 
-    #[runner::test]
+    #[tokio::test]
     async fn hashing_fuzz() {
         assert_eq!(
             fuzz_contract("./collections_bench-HASH.wasm").await,
-            635139298987587
+            635133853758771
         );
     }
 
-    #[runner::test]
+    #[tokio::test]
     async fn serialize_fuzz() {
         assert_eq!(
             fuzz_contract("./collections_bench-SERIALIZE.wasm").await,
-            654582322008654
+            502773485446719
         );
     }
 
-    #[runner::test]
+    #[tokio::test]
     async fn old_fuzz() {
         assert_eq!(
             fuzz_contract("./old_structure.wasm").await,
-            1023236609572743
+            912612606379644
         );
     }
 
-    #[runner::test]
+    #[tokio::test]
     #[ignore]
     async fn curr_fuzz() {
         assert_eq!(

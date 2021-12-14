@@ -20,11 +20,11 @@ type ValueType = StackHeapMock;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct LookupBench {
+pub struct LookupMapBench {
     map: LookupMap<KeyType, ValueType>,
 }
 
-impl Default for LookupBench {
+impl Default for LookupMapBench {
     fn default() -> Self {
         Self {
             map: LookupMap::new(b"m"),
@@ -33,7 +33,7 @@ impl Default for LookupBench {
 }
 
 #[derive(Debug, BorshDeserialize, BorshSerialize)]
-pub enum Action<K, V> {
+pub enum MapAction<K, V> {
     Insert(K, V),
     Set(K, Option<V>),
     Remove(K),
@@ -42,28 +42,28 @@ pub enum Action<K, V> {
 }
 
 #[near_bindgen]
-impl LookupBench {
-    pub fn fuzz(&mut self, #[serializer(borsh)] actions: Vec<Action<KeyType, ValueType>>) {
+impl LookupMapBench {
+    pub fn fuzz(&mut self, #[serializer(borsh)] actions: Vec<MapAction<KeyType, ValueType>>) {
         let lm = &mut self.map;
         for op in actions {
             match op {
-                Action::Insert(k, v) => {
+                MapAction::Insert(k, v) => {
                     let _r = black_box(lm.insert(&k, &v));
                 }
-                Action::Set(k, v) => {
+                MapAction::Set(k, v) => {
                     if let Some(v) = v {
                         let _r = black_box(lm.insert(&k, &v));
                     } else {
                         black_box(lm.remove(&k));
                     }
                 }
-                Action::Remove(k) => {
+                MapAction::Remove(k) => {
                     let _r = black_box(lm.remove(&k));
                 }
-                Action::Flush => {
+                MapAction::Flush => {
                     // lm.flush();
                 }
-                Action::Get(k) => {
+                MapAction::Get(k) => {
                     let _r = black_box(lm.get(&k));
                 }
             }
