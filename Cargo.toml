@@ -21,7 +21,6 @@ near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "daniyar/effi
 arbitrary = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-# This commit may be broken in the future if squashed
 workspaces = { git = "https://github.com/near/workspaces-rs", branch = "feat/call-builder" }
 #workspaces = { path = "../../near/workspaces-rs/workspaces" }
 rand_xorshift = "0.3"

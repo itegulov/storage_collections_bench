@@ -3,10 +3,10 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
 use near_sdk::store::LookupMap;
 use std::hint::black_box;
-use crate::types::StackHeapMock;
+use crate::types::HeavyMock;
 
-type KeyType = StackHeapMock;
-type ValueType = StackHeapMock;
+type KeyType = HeavyMock;
+type ValueType = HeavyMock;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -65,7 +65,7 @@ mod tests {
     use near_sdk::Gas;
     use rand::SeedableRng;
     use rand::{Rng, RngCore};
-    use crate::utils::run_contract;
+    use crate::utils::test::run_contract;
 
     const BUFFER_SIZE: usize = 4096;
 
