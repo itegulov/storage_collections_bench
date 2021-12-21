@@ -16,7 +16,7 @@ panic = "abort"
 
 [dependencies]
 # near-sdk = "4.0.0-pre.3"
-near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "daniyar/efficient-lookup-set", features = ["unstable"] }
+near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "daniyar/bench-target", features = ["unstable"] }
 #near-sdk = { path = "../../near/near-sdk-rs/near-sdk", features = ["unstable"] }
 arbitrary = { version = "1.0", features = ["derive"] }
 
@@ -26,3 +26,4 @@ workspaces = { git = "https://github.com/near/workspaces-rs", branch = "feat/cal
 rand_xorshift = "0.3"
 rand = "0.8.3"
 tokio = { version = "1.14.0", features = ["full"] }
+test-case = "1.2.1"

@@ -65,15 +65,15 @@ mod tests {
     use near_sdk::Gas;
     use rand::SeedableRng;
     use rand::{Rng, RngCore};
-    use crate::utils::test::run_contract;
+    use crate::utils::test::run_contract_dual_function;
 
     const BUFFER_SIZE: usize = 4096;
 
-    async fn fuzz_contract(wasm_file: &str) -> Gas {
+    async fn fuzz_contract(wasm_file: &str) -> (Gas, Gas) {
         let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
         let mut buf = vec![0; BUFFER_SIZE];
 
-        run_contract(wasm_file, "fuzz", || {
+        run_contract_dual_function(wasm_file, "fuzz", "fuzz_old", || {
             rng.fill_bytes(&mut buf);
             let u = Unstructured::new(&buf[0..(rng.gen::<usize>() % BUFFER_SIZE)]);
             Vec::<MapAction<KeyType, ValueType>>::arbitrary_take_rest(u).unwrap()
@@ -83,33 +83,16 @@ mod tests {
     #[tokio::test]
     async fn hashing_fuzz() {
         assert_eq!(
-            fuzz_contract("./collections_bench-HASH.wasm").await,
-            Gas(635133853758771)
+            fuzz_contract("./collections_bench.wasm").await,
+            (Gas(635133853758771), Gas(912643592244114))
         );
     }
 
     #[tokio::test]
     async fn serialize_fuzz() {
         assert_eq!(
-            fuzz_contract("./collections_bench-SERIALIZE.wasm").await,
-            Gas(502822617744153)
-        );
-    }
-
-    #[tokio::test]
-    async fn old_fuzz() {
-        assert_eq!(
-            fuzz_contract("./old_structure.wasm").await,
-            Gas(912643592244114)
-        );
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn curr_fuzz() {
-        assert_eq!(
-            fuzz_contract("./target/wasm32-unknown-unknown/release/collections_bench.wasm").await,
-            Gas(635133853758771)
+            fuzz_contract("./collections_bench.wasm").await,
+            (Gas(502822617744153), Gas(912643592244114))
         );
     }
 }

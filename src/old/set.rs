@@ -3,7 +3,7 @@ use near_sdk::collections::LookupSet;
 use near_sdk::near_bindgen;
 use std::hint::black_box;
 use crate::set::SetAction;
-use crate::types::{HeavyMock, LightMock};
+use crate::types::{HeavyMock, LightDenseMock, LightSparseMock};
 
 macro_rules! lookup_set_contract_gen {
     ($ty:ty, $contract:ident, $function:ident) => {
@@ -51,11 +51,17 @@ macro_rules! lookup_set_contract_gen {
 lookup_set_contract_gen!(
     HeavyMock,
     LookupSetBenchHeavyElement,
-    fuzz_old_set_heavy
+    fuzz_set_heavy_old
 );
 
 lookup_set_contract_gen!(
-    LightMock,
-    LookupSetBenchLightElement,
-    fuzz_old_set_light
+    LightSparseMock,
+    LookupSetLightSparseOld,
+    fuzz_set_light_sparse_old
+);
+
+lookup_set_contract_gen!(
+    LightDenseMock,
+    LookupSetLightDenseOld,
+    fuzz_set_light_dense_old
 );

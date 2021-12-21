@@ -1,4 +1,4 @@
-use arbitrary::Arbitrary;
+use arbitrary::{Arbitrary, Unstructured};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
 #[derive(
@@ -31,6 +31,32 @@ pub struct HeavyMock {
     Debug,
     Default,
 )]
-pub struct LightMock {
+pub struct LightSparseMock {
     a: u32
+}
+
+#[derive(
+    BorshDeserialize,
+    BorshSerialize,
+    Ord,
+    PartialOrd,
+    Eq,
+    PartialEq,
+    Clone,
+    Debug,
+    Default,
+)]
+pub struct LightDenseMock {
+    a: u32
+}
+
+impl <'a> Arbitrary<'a> for LightDenseMock {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+        let a = u32::arbitrary(u)?;
+        Ok(LightDenseMock { a: a & 7 })
+    }
+
+    fn size_hint(_: usize) -> (usize, Option<usize>) {
+        return (32, Some(32))
+    }
 }
