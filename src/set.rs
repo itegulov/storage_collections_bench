@@ -144,10 +144,10 @@ mod tests {
         }).await
     }
 
-    #[test_case(64,    563723433287917,  462288752113738 ; "with 064 operations")]
-    #[test_case(128,  1015887041672376,  806576942520387 ; "with 128 operations")]
-    #[test_case(256,  1948362681520994, 1509536350889051 ; "with 256 operations")]
-    #[test_case(512,  3852900638238426, 2937119661769821 ; "with 512 operations")]
+    #[test_case(64,   563825064761917,  462390383587738 ; "with 064 operations")]
+    #[test_case(128, 1015988673146376,  806678573994387 ; "with 128 operations")]
+    #[test_case(256, 1948464312994994, 1509637982363051 ; "with 256 operations")]
+    #[test_case(512, 3853002269712426, 2937221293243821 ; "with 512 operations")]
     #[tokio::test]
     async fn hash_fuzz_set_heavy_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
@@ -156,10 +156,10 @@ mod tests {
         );
     }
 
-    #[test_case(64,   531775648247161,  438986454256312 ; "with 064 operations")]
-    #[test_case(128,  952354792505115,  761001734529357 ; "with 128 operations")]
-    #[test_case(256, 1817893848259934, 1414400250474077 ; "with 256 operations")]
-    #[test_case(512, 3586850835767736, 2744406249240675 ; "with 512 operations")]
+    #[test_case(64,   531877279721161,  439088085730312 ; "with 064 operations")]
+    #[test_case(128,  952456423979115,  761103366003357 ; "with 128 operations")]
+    #[test_case(256, 1817995479733934, 1414501881948077 ; "with 256 operations")]
+    #[test_case(512, 3586952467241736, 2744507880714675 ; "with 512 operations")]
     #[tokio::test]
     async fn hash_fuzz_set_heavy_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
@@ -168,10 +168,10 @@ mod tests {
         );
     }
 
-    #[test_case(64,   519315256613732,  442518790213892 ; "with 064 operations")]
-    #[test_case(128,  922246700456297,  766217437159403 ; "with 128 operations")]
-    #[test_case(256, 1754615799948900, 1427757320926044 ; "with 256 operations")]
-    #[test_case(512, 3451995555110782, 2768077620880522 ; "with 512 operations")]
+    #[test_case(64,   519416888087732,  442802014341911 ; "with 064 operations")]
+    #[test_case(128,  922348331930297,  766682493036443 ; "with 128 operations")]
+    #[test_case(256, 1754717431422900, 1428585562111122 ; "with 256 operations")]
+    #[test_case(512, 3452097186584782, 2769629841731656 ; "with 512 operations")]
     #[tokio::test]
     async fn hash_fuzz_set_light_sparse_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
@@ -180,10 +180,10 @@ mod tests {
         );
     }
 
-    #[test_case(64,   490883020135223,  418826633047916 ; "with 064 operations")]
-    #[test_case(128,  863848035874619,  718151633339201 ; "with 128 operations")]
-    #[test_case(256, 1634819635517784, 1327528452616686 ; "with 256 operations")]
-    #[test_case(512, 3209211448474576, 2564005563884140 ; "with 512 operations")]
+    #[test_case(64,   490984651609223,  419109857175935 ; "with 064 operations")]
+    #[test_case(128,  863949667348619,  718616689216241 ; "with 128 operations")]
+    #[test_case(256, 1634921266991784, 1328356693801764 ; "with 256 operations")]
+    #[test_case(512, 3209313079948576, 2565557784735274 ; "with 512 operations")]
     #[tokio::test]
     async fn hash_fuzz_set_light_sparse_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
@@ -192,10 +192,10 @@ mod tests {
         );
     }
 
-    #[test_case(64,  196151635617761, 269667186280088 ; "with 064 operations")]
-    #[test_case(128, 206206595419745, 374945824484273 ; "with 128 operations")]
-    #[test_case(256, 227087020371975, 580710145385418 ; "with 256 operations")]
-    #[test_case(512, 272825580755992, 997933399659310 ; "with 512 operations")]
+    #[test_case(64,  196253267091761, 269950410408107 ; "with 064 operations")]
+    #[test_case(128, 206308226893745, 375410880361313 ; "with 128 operations")]
+    #[test_case(256, 227188651845975, 581538386570496 ; "with 256 operations")]
+    #[test_case(512, 272927212229992, 999485620510444 ; "with 512 operations")]
     #[tokio::test]
     async fn hash_fuzz_set_light_dense_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
@@ -204,10 +204,10 @@ mod tests {
         );
     }
 
-    #[test_case(64,  192421041933956, 269134691991830 ; "with 064 operations")]
-    #[test_case(128, 203850139948580, 374212516496273 ; "with 128 operations")]
-    #[test_case(256, 227164659042903, 580054504792788 ; "with 256 operations")]
-    #[test_case(512, 280519671569965, 997583865909598 ; "with 512 operations")]
+    #[test_case(64,  192522673407956, 269417916119849 ; "with 064 operations")]
+    #[test_case(128, 203951771422580, 374677572373313 ; "with 128 operations")]
+    #[test_case(256, 227266290516903, 580882745977866 ; "with 256 operations")]
+    #[test_case(512, 280621303043965, 999136086760732 ; "with 512 operations")]
     #[tokio::test]
     async fn hash_fuzz_set_light_dense_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(

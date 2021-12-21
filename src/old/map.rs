@@ -3,51 +3,72 @@ use near_sdk::collections::LookupMap;
 use near_sdk::near_bindgen;
 use std::hint::black_box;
 use crate::map::MapAction;
-use crate::types::HeavyMock;
+use crate::types::{HeavyMock, LightDenseMock, LightSparseMock};
 
-type KeyType = HeavyMock;
-type ValueType = HeavyMock;
-
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct LookupMapBench {
-    map: LookupMap<KeyType, ValueType>,
-}
-
-impl Default for LookupMapBench {
-    fn default() -> Self {
-        Self {
-            map: LookupMap::new(b"m"),
+macro_rules! lookup_map_contract_gen {
+    ($key:ty, $value:ty, $contract:ident, $function:ident) => {
+        #[near_bindgen]
+        #[derive(BorshDeserialize, BorshSerialize)]
+        pub struct $contract {
+            map: LookupMap<$key, $value>,
         }
-    }
-}
 
-#[near_bindgen]
-impl LookupMapBench {
-    pub fn fuzz_old_map(&mut self, #[serializer(borsh)] actions: Vec<MapAction<KeyType, ValueType>>) {
-        let lm = &mut self.map;
-        for op in actions {
-            match op {
-                MapAction::Insert(k, v) => {
-                    let _r = black_box(lm.insert(&k, &v));
+        impl Default for $contract {
+            fn default() -> Self {
+                Self {
+                    map: LookupMap::new(b"m"),
                 }
-                MapAction::Set(k, v) => {
-                    if let Some(v) = v {
-                        let _r = black_box(lm.insert(&k, &v));
-                    } else {
-                        black_box(lm.remove(&k));
+            }
+        }
+
+        #[near_bindgen]
+        impl $contract {
+            pub fn $function(&mut self, #[serializer(borsh)] actions: Vec<MapAction<$key, $value>>) {
+                let lm = &mut self.map;
+                for op in actions {
+                    match op {
+                        MapAction::Insert(k, v) => {
+                            let _r = black_box(lm.insert(&k, &v));
+                        }
+                        MapAction::Set(k, v) => {
+                            if let Some(v) = v {
+                                let _r = black_box(lm.insert(&k, &v));
+                            } else {
+                                black_box(lm.remove(&k));
+                            }
+                        }
+                        MapAction::Remove(k) => {
+                            let _r = black_box(lm.remove(&k));
+                        }
+                        MapAction::Flush => {
+                        }
+                        MapAction::Get(k) => {
+                            let _r = black_box(lm.get(&k));
+                        }
                     }
-                }
-                MapAction::Remove(k) => {
-                    let _r = black_box(lm.remove(&k));
-                }
-                MapAction::Flush => {
-                    // lm.flush();
-                }
-                MapAction::Get(k) => {
-                    let _r = black_box(lm.get(&k));
                 }
             }
         }
     }
 }
+
+lookup_map_contract_gen!(
+    HeavyMock,
+    HeavyMock,
+    LookupMapHeavyOld,
+    fuzz_map_heavy_old
+);
+
+lookup_map_contract_gen!(
+    LightSparseMock,
+    LightSparseMock,
+    LookupMapLightSparseOld,
+    fuzz_map_light_sparse_old
+);
+
+lookup_map_contract_gen!(
+    LightDenseMock,
+    LightDenseMock,
+    LookupMapLightDenseOld,
+    fuzz_map_light_dense_old
+);

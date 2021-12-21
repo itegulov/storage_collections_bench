@@ -50,7 +50,7 @@ macro_rules! lookup_set_contract_gen {
 
 lookup_set_contract_gen!(
     HeavyMock,
-    LookupSetBenchHeavyElement,
+    LookupSetHeavyOld,
     fuzz_set_heavy_old
 );
 
