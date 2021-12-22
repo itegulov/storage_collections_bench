@@ -121,97 +121,168 @@ mod tests {
     use near_sdk::Gas;
     use rand::SeedableRng;
     use rand::{Rng, RngCore};
+    use rand::prelude::SliceRandom;
+    use rand_xorshift::XorShiftRng;
     use test_case::test_case;
     use crate::utils::test::run_contract_dual_function;
 
     const BUFFER_SIZE: usize = 4096;
 
-    async fn fuzz_set_contract<T>(wasm_file: &str, function1: &str, function2: &str, elements: usize) -> (Gas, Gas)
+    fn generate_n_elements<T>(n: usize, rng: &mut XorShiftRng, mut buf: &mut Vec<u8>) -> Vec<T>
+    where for<'a> T: Arbitrary<'a> + BorshSerialize
+    {
+        let mut result = Vec::new();
+        while result.len() < n {
+            rng.fill_bytes(&mut buf);
+            let mut u = Unstructured::new(&buf[0..(rng.gen::<usize>() % BUFFER_SIZE)]);
+            result.append(&mut Vec::<T>::arbitrary(&mut u).unwrap());
+        }
+        result.truncate(n);
+        result
+    }
+
+    async fn fuzz_random<T>(wasm_file: &str, function1: &str, function2: &str, elements: usize) -> (Gas, Gas)
     where for<'a> T: Arbitrary<'a> + BorshSerialize
     {
         let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
         let mut buf = vec![0; BUFFER_SIZE];
 
         run_contract_dual_function(wasm_file, function1, function2, || {
+            generate_n_elements::<SetAction<T>>(elements, &mut rng, &mut buf)
+        }).await
+    }
+
+    async fn fuzz_percentage<T: Clone + Default>(wasm_file: &str, function1: &str, function2: &str, n: usize, percentage: usize) -> (Gas, Gas)
+    where for<'a> T: Arbitrary<'a> + BorshSerialize
+    {
+        assert!(percentage <= 100);
+        let hits = n * percentage / 100;
+        let misses = n - hits;
+        let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(0);
+        let mut buf = vec![0; BUFFER_SIZE];
+        rng.fill_bytes(&mut buf);
+
+        run_contract_dual_function(wasm_file, function1, function2, || {
+            let domain = generate_n_elements::<T>(n, &mut rng, &mut buf);
+            let mut elements = domain.to_vec();
+            elements.shuffle(&mut rng);
             let mut result = Vec::new();
-            while result.len() < elements {
+            for element in domain {
+                result.push(SetAction::Insert(element));
+            }
+            for element in elements.drain(0..hits) {
+                result.push(SetAction::Contains(element));
+            }
+            for _ in 0..misses {
                 rng.fill_bytes(&mut buf);
                 let mut u = Unstructured::new(&buf[0..(rng.gen::<usize>() % BUFFER_SIZE)]);
-                result.append(&mut Vec::<SetAction<T>>::arbitrary(&mut u).unwrap());
+                result.push(SetAction::Contains(T::arbitrary(&mut u).unwrap()));
             }
-            result.truncate(elements);
             result
         }).await
     }
 
-    #[test_case(64,   563825064761917,  462390383587738 ; "with 064 operations")]
-    #[test_case(128, 1015988673146376,  806678573994387 ; "with 128 operations")]
-    #[test_case(256, 1948464312994994, 1509637982363051 ; "with 256 operations")]
-    #[test_case(512, 3853002269712426, 2937221293243821 ; "with 512 operations")]
+    #[test_case(64,   563825064761917,  434967916129132 ; "with 064 operations")]
+    #[test_case(128, 1015988673146376,  751540735299189 ; "with 128 operations")]
+    #[test_case(256, 1948464312994994, 1396324704823499 ; "with 256 operations")]
+    #[test_case(512, 3853002269712426, 2709166018572981 ; "with 512 operations")]
     #[tokio::test]
-    async fn hash_fuzz_set_heavy_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+    async fn fuzz_heavy_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
-            fuzz_set_contract::<HeavyMock>("./collections_bench.wasm", "fuzz_set_heavy_identity", "fuzz_set_heavy_old", ops).await,
+            fuzz_random::<HeavyMock>("./collections_bench.wasm", "fuzz_set_heavy_identity", "fuzz_set_heavy_old", ops).await,
             (Gas(new_gas_usage), Gas(old_gas_usage))
         );
     }
 
-    #[test_case(64,   531877279721161,  439088085730312 ; "with 064 operations")]
-    #[test_case(128,  952456423979115,  761103366003357 ; "with 128 operations")]
-    #[test_case(256, 1817995479733934, 1414501881948077 ; "with 256 operations")]
-    #[test_case(512, 3586952467241736, 2744507880714675 ; "with 512 operations")]
+    #[test_case(64,   531603546470419,  434967916129132 ; "with 064 operations")]
+    #[test_case(128,  951989467257261,  751540735299189 ; "with 128 operations")]
+    #[test_case(256, 1817077668246152, 1396324704823499 ; "with 256 operations")]
+    #[test_case(512, 3584698193412096, 2709166018572981 ; "with 512 operations")]
     #[tokio::test]
-    async fn hash_fuzz_set_heavy_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+    async fn fuzz_heavy_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
-            fuzz_set_contract::<HeavyMock>("./collections_bench.wasm", "fuzz_set_heavy_sha256", "fuzz_set_heavy_old", ops).await,
+            fuzz_random::<HeavyMock>("./collections_bench.wasm", "fuzz_set_heavy_sha256", "fuzz_set_heavy_old", ops).await,
             (Gas(new_gas_usage), Gas(old_gas_usage))
         );
     }
 
-    #[test_case(64,   519416888087732,  442802014341911 ; "with 064 operations")]
-    #[test_case(128,  922348331930297,  766682493036443 ; "with 128 operations")]
-    #[test_case(256, 1754717431422900, 1428585562111122 ; "with 256 operations")]
-    #[test_case(512, 3452097186584782, 2769629841731656 ; "with 512 operations")]
+    #[test_case(64,   519416888087732,  414538832808827 ; "with 064 operations")]
+    #[test_case(128,  922348331930297,  710825273663933 ; "with 128 operations")]
+    #[test_case(256, 1754717431422900, 1314366025217946 ; "with 256 operations")]
+    #[test_case(512, 3452097186584782, 2539055896396954 ; "with 512 operations")]
     #[tokio::test]
-    async fn hash_fuzz_set_light_sparse_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+    async fn fuzz_light_sparse_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
-            fuzz_set_contract::<LightSparseMock>("./collections_bench.wasm", "fuzz_set_light_sparse_identity", "fuzz_set_light_sparse_old", ops).await,
+            fuzz_random::<LightSparseMock>("./collections_bench.wasm", "fuzz_set_light_sparse_identity", "fuzz_set_light_sparse_old", ops).await,
             (Gas(new_gas_usage), Gas(old_gas_usage))
         );
     }
 
-    #[test_case(64,   490984651609223,  419109857175935 ; "with 064 operations")]
-    #[test_case(128,  863949667348619,  718616689216241 ; "with 128 operations")]
-    #[test_case(256, 1634921266991784, 1328356693801764 ; "with 256 operations")]
-    #[test_case(512, 3209313079948576, 2565557784735274 ; "with 512 operations")]
+    #[test_case(64,   490775326182185,  414538832808827 ; "with 064 operations")]
+    #[test_case(128,  863466608670839,  710825273663933 ; "with 128 operations")]
+    #[test_case(256, 1633520396826222, 1314366025217946 ; "with 256 operations")]
+    #[test_case(512, 3206785072868194, 2539055896396954 ; "with 512 operations")]
     #[tokio::test]
-    async fn hash_fuzz_set_light_sparse_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+    async fn fuzz_light_sparse_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
-            fuzz_set_contract::<LightSparseMock>("./collections_bench.wasm", "fuzz_set_light_sparse_sha256", "fuzz_set_light_sparse_old", ops).await,
+            fuzz_random::<LightSparseMock>("./collections_bench.wasm", "fuzz_set_light_sparse_sha256", "fuzz_set_light_sparse_old", ops).await,
             (Gas(new_gas_usage), Gas(old_gas_usage))
         );
     }
 
-    #[test_case(64,  196253267091761, 269950410408107 ; "with 064 operations")]
-    #[test_case(128, 206308226893745, 375410880361313 ; "with 128 operations")]
-    #[test_case(256, 227188651845975, 581538386570496 ; "with 256 operations")]
-    #[test_case(512, 272927212229992, 999485620510444 ; "with 512 operations")]
+    #[test_case(64,  196253267091761, 268936788557945 ; "with 064 operations")]
+    #[test_case(128, 206308226893745, 374132036987705 ; "with 128 operations")]
+    #[test_case(256, 227188651845975, 580337210592258 ; "with 256 operations")]
+    #[test_case(512, 272927212229992, 998590551375124 ; "with 512 operations")]
     #[tokio::test]
-    async fn hash_fuzz_set_light_dense_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+    async fn fuzz_light_dense_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
-            fuzz_set_contract::<LightDenseMock>("./collections_bench.wasm", "fuzz_set_light_dense_identity", "fuzz_set_light_dense_old", ops).await,
+            fuzz_random::<LightDenseMock>("./collections_bench.wasm", "fuzz_set_light_dense_identity", "fuzz_set_light_dense_old", ops).await,
             (Gas(new_gas_usage), Gas(old_gas_usage))
         );
     }
 
-    #[test_case(64,  192522673407956, 269417916119849 ; "with 064 operations")]
-    #[test_case(128, 203951771422580, 374677572373313 ; "with 128 operations")]
-    #[test_case(256, 227266290516903, 580882745977866 ; "with 256 operations")]
-    #[test_case(512, 280621303043965, 999136086760732 ; "with 512 operations")]
+    #[test_case(64,  192522673407956, 268936788557945 ; "with 064 operations")]
+    #[test_case(128, 203951771422580, 374132036987705 ; "with 128 operations")]
+    #[test_case(256, 227266290516903, 580337210592258 ; "with 256 operations")]
+    #[test_case(512, 280621303043965, 998590551375124 ; "with 512 operations")]
     #[tokio::test]
-    async fn hash_fuzz_set_light_dense_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+    async fn fuzz_light_dense_sha256(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
         assert_eq!(
-            fuzz_set_contract::<LightDenseMock>("./collections_bench.wasm", "fuzz_set_light_dense_sha256", "fuzz_set_light_dense_old", ops).await,
+            fuzz_random::<LightDenseMock>("./collections_bench.wasm", "fuzz_set_light_dense_sha256", "fuzz_set_light_dense_old", ops).await,
+            (Gas(new_gas_usage), Gas(old_gas_usage))
+        );
+    }
+
+    #[test_case(64,   878262208754025,  629461172694120 ; "with 064 operations")]
+    #[test_case(128, 1655916649737927, 1144992894197910 ; "with 128 operations")]
+    #[test_case(256, 3244494042851619, 2195843685141948 ; "with 256 operations")]
+    #[tokio::test]
+    async fn fuzz_50_percent_light_sparse_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+        assert_eq!(
+            fuzz_percentage::<LightSparseMock>("./collections_bench.wasm", "fuzz_set_light_sparse_identity", "fuzz_set_light_sparse_old", ops, 50).await,
+            (Gas(new_gas_usage), Gas(old_gas_usage))
+        );
+    }
+
+    #[test_case(64,   805257406158810,  581576917463124 ; "with 064 operations")]
+    #[test_case(128, 1506473111380050, 1046242656367122 ; "with 128 operations")]
+    #[test_case(256, 2939700087599658, 1991859852287166 ; "with 256 operations")]
+    #[tokio::test]
+    async fn fuzz_75_percent_light_sparse_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+        assert_eq!(
+            fuzz_percentage::<LightSparseMock>("./collections_bench.wasm", "fuzz_set_light_sparse_identity", "fuzz_set_light_sparse_old", ops, 75).await,
+            (Gas(new_gas_usage), Gas(old_gas_usage))
+        );
+    }
+
+    #[test_case(64,   732480732655629,  533660458320276 ; "with 064 operations")]
+    #[test_case(128, 1358195486324472, 947720703729042 ; "with 128 operations")]
+    #[test_case(256, 2636144750200017, 1788552301581276 ; "with 256 operations")]
+    #[tokio::test]
+    async fn fuzz_100_percent_light_sparse_identity(ops: usize, new_gas_usage: u64, old_gas_usage: u64) {
+        assert_eq!(
+            fuzz_percentage::<LightSparseMock>("./collections_bench.wasm", "fuzz_set_light_sparse_identity", "fuzz_set_light_sparse_old", ops, 100).await,
             (Gas(new_gas_usage), Gas(old_gas_usage))
         );
     }
