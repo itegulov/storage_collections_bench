@@ -14,9 +14,9 @@ pub mod test {
         ops: &Vec<T>
     ) -> Gas {
         let outcome = contract
-            .call(&worker, function.to_string())
-            .with_args(ops.try_to_vec().unwrap())
-            .with_gas(300_000_000_000_000) // 300 TGas
+            .call(&worker, function)
+            .args(ops.try_to_vec().unwrap())
+            .gas(300_000_000_000_000) // 300 TGas
             .transact()
             .await
             .unwrap();
