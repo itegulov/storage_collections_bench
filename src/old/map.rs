@@ -1,6 +1,6 @@
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
-use near_sdk::near_bindgen;
+use near_sdk_old::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk_old::store::LookupMap;
+use near_sdk_old::near_bindgen;
 use std::hint::black_box;
 use crate::map::MapAction;
 use crate::types::{HeavyMock, LightDenseMock, LightSparseMock};
@@ -28,11 +28,11 @@ macro_rules! lookup_map_contract_gen {
                 for op in actions {
                     match op {
                         MapAction::Insert(k, v) => {
-                            let _r = black_box(lm.insert(&k, &v));
+                            let _r = black_box(lm.insert(k, v));
                         }
                         MapAction::Set(k, v) => {
                             if let Some(v) = v {
-                                let _r = black_box(lm.insert(&k, &v));
+                                let _r = black_box(lm.insert(k, v));
                             } else {
                                 black_box(lm.remove(&k));
                             }

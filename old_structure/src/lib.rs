@@ -88,7 +88,6 @@ impl Default for LookupSetBench {
 #[derive(Debug, BorshDeserialize, BorshSerialize)]
 pub enum SetAction<T> {
     Insert(T),
-    Put(T),
     Remove(T),
     Flush,
     Contains(T),
@@ -102,9 +101,6 @@ impl LookupSetBench {
             match op {
                 SetAction::Insert(v) => {
                     let _r = black_box(ls.insert(&v));
-                }
-                SetAction::Put(v) => {
-                    black_box(ls.insert(&v));
                 }
                 SetAction::Remove(v) => {
                     let _r = black_box(ls.remove(&v));

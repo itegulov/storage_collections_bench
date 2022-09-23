@@ -1,6 +1,6 @@
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupSet;
-use near_sdk::near_bindgen;
+use near_sdk_old::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk_old::store::LookupSet;
+use near_sdk_old::near_bindgen;
 use std::hint::black_box;
 use crate::set::SetAction;
 use crate::types::{HeavyMock, LightDenseMock, LightSparseMock};
@@ -28,15 +28,10 @@ macro_rules! lookup_set_contract_gen {
                 for op in actions {
                     match op {
                         SetAction::Insert(v) => {
-                            let _r = black_box(ls.insert(&v));
-                        }
-                        SetAction::Put(v) => {
-                            black_box(ls.insert(&v));
+                            let _r = black_box(ls.insert(v));
                         }
                         SetAction::Remove(v) => {
                             let _r = black_box(ls.remove(&v));
-                        }
-                        SetAction::Flush => {
                         }
                         SetAction::Contains(v) => {
                             let _r = black_box(ls.contains(&v));

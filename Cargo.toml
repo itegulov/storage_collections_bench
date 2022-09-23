@@ -16,12 +16,13 @@ panic = "abort"
 
 [dependencies]
 # near-sdk = "4.0.0-pre.3"
-near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "daniyar/bench-target", features = ["unstable"] }
-#near-sdk = { path = "../../near/near-sdk-rs/near-sdk", features = ["unstable"] }
-arbitrary = { version = "1.0", features = ["derive"] }
+# near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "daniyar/bench-target", features = ["unstable"] }
+near-sdk = { path = "../../near/near-sdk-rs/near-sdk", features = ["unstable"], default-features = false }
+near-sdk-old = { package = "near-sdk", version = "4.1.0-pre.3", features = ["unstable"] }
+arbitrary = { version = "=1.0", features = ["derive"] }
 
 [dev-dependencies]
-workspaces = "0.1"
+workspaces = "0.5"
 #workspaces = { path = "../../near/workspaces-rs/workspaces" }
 rand_xorshift = "0.3"
 rand = "0.8.3"
