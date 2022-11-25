@@ -1,0 +1,5 @@
+{
+    "rust.rustup": {
+        "toolchain": "nightly"
+    }
+}
